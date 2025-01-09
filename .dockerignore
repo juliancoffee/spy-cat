@@ -1,0 +1,5 @@
+# env vars
+.env
+
+# uv's virtual environment for python
+.venv
