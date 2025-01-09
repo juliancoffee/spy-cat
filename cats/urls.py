@@ -11,5 +11,6 @@ urlpatterns = [
     path("cat/create/", views.create_cat, name="create_cat"),
     # missions
     path("mission/", views.list_missions, name="list_missions"),
+    path("mission/<int:mission_id>", views.mission, name="mission"),
     path("mission/create/", views.create_mission, name="create_mission"),
 ]

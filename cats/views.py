@@ -89,6 +89,12 @@ def create_cat(request: HttpRequest) -> JsonResponse:
     experience = int(data["years_exp"])
     breed = data["breed"]
     if not is_valid_breed(breed):
+        # TODO: move this check onto the model?
+        #
+        # how it is now, it's the only way where we're setting
+        # the breed, but this could change, in theory
+        #
+        # and we'd need to pay attention to this everywhere
         return JsonResponse(
             {
                 "err": "bad breed",
@@ -127,6 +133,29 @@ def list_missions(request: HttpRequest) -> JsonResponse:
         }
     )
 
+@require_http_methods(["GET", "DELETE", "PATCH"])
+def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
+    if request.method == "GET":
+        m = get_object_or_404(Mission, pk=mission_id)
+        return JsonResponse(
+            {
+                "id": m.id,
+                "cat_id": m.cat.id if m.cat else None,
+                "targets": [
+                    {
+                        "target_id": t.id,
+                        "name": t.name,
+                        "country": t.country,
+                        "notes": t.notes,
+                        "complete": t.complete,
+                    }
+                    for t in m.target_set.all()
+                ],
+            }
+        )
+    elif request.method == "DELETE":
+        Mission.objects.get(pk=mission_id).delete()
+        return JsonResponse({"ok": mission_id})
 
 @require_POST
 @csrf_exempt
@@ -151,3 +180,4 @@ def create_mission(request: HttpRequest) -> JsonResponse:
             complete=False,
         )
     return JsonResponse({"id": mission.id})
+

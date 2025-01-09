@@ -32,7 +32,8 @@ class Mission(models.Model):
         super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        # TODO: check that cat doesn't have more than 3 missions
+        if self.cat is not None and self.cat.mission_set.count() >= 3:
+            raise IntegrityError("cats can't have more than 3 missions")
         super().save(*args, **kwargs)
 
 
