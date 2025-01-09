@@ -11,6 +11,7 @@ def list(request: HttpRequest) -> JsonResponse:
         {
             "cats": [
                 {
+                    "id": c.id,
                     "name": c.name,
                     "years_exp": c.experience,
                     "breed": c.breed,
