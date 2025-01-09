@@ -5,6 +5,8 @@ from django.db import models
 class Cat(models.Model):
     # ok, I think we need at least some length limit for a name
     # 200 should be pretty generous
+    #
+    # NOTE: name is not required to be unique here
     name = models.CharField(max_length=200)
     experience = models.PositiveIntegerField()
     # we will validate the breed using the api anyway
