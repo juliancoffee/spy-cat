@@ -4,7 +4,7 @@ import requests
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from .models import Cat
 
@@ -35,16 +35,22 @@ def list(request: HttpRequest) -> JsonResponse:
     )
 
 
-def info(request: HttpRequest, cat_id: int) -> JsonResponse:
-    c = get_object_or_404(Cat, pk=cat_id)
-    return JsonResponse(
-        {
-            "name": c.name,
-            "years_exp": c.experience,
-            "breed": c.breed,
-            "salary": c.salary,
-        }
-    )
+@require_http_methods(["GET", "DELETE"])
+@csrf_exempt
+def cat(request: HttpRequest, cat_id: int) -> JsonResponse:
+    if request.method == "GET":
+        c = get_object_or_404(Cat, pk=cat_id)
+        return JsonResponse(
+            {
+                "name": c.name,
+                "years_exp": c.experience,
+                "breed": c.breed,
+                "salary": c.salary,
+            }
+        )
+    elif request.method == "DELETE":
+        Cat.objects.get(pk=cat_id).delete()
+        return JsonResponse({"ok": cat_id})
 
 
 def is_valid_breed(breed: str) -> bool:
@@ -56,6 +62,12 @@ def is_valid_breed(breed: str) -> bool:
 
 @require_POST
 @csrf_exempt
+# TODO: I guess this could be a PUT method?
+# but then PUT should be idempotent and we create a new cat each time...
+#
+# this wouldn't be a problem if we had uniqueness constraint on name, I think
+#
+# or maybe I'm just overthinking
 def create_cat(request: HttpRequest) -> JsonResponse:
     data = get_json(request)
 
