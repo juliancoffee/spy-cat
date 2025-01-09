@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import Cat, Mission
+from .models import Cat, Mission, Target
 
 
 def get_json(request: HttpRequest) -> dict:
@@ -117,6 +117,7 @@ def list_missions(request: HttpRequest) -> JsonResponse:
                 {
                     "id": m.id,
                     "cat_id": m.cat.id if m.cat else None,
+                    "complete": m.complete,
                     "targets": [
                         {
                             "target_id": t.id,
@@ -142,6 +143,7 @@ def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
             {
                 "id": m.id,
                 "cat_id": m.cat.id if m.cat else None,
+                "complete": m.complete,
                 "targets": [
                     {
                         "target_id": t.id,
@@ -161,9 +163,7 @@ def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
         m = Mission.objects.get(pk=mission_id)
         data = get_json(request)
         if set(data) != {"cat_id"}:
-            return JsonResponse(
-                {"err": "only cat can be changed"}, status=400
-            )
+            return JsonResponse({"err": "only cat can be changed"}, status=400)
 
         # NOTE: allows to un-assign cats
         # that's a feature, not a bug
@@ -194,6 +194,8 @@ def create_mission(request: HttpRequest) -> JsonResponse:
             maybe_cat = get_object_or_404(Cat, pk=int(cat_id))
 
     mission = Mission(cat=maybe_cat, complete=False)
+    if maybe_cat is not None and maybe_cat.mission_set.count() >= 3:
+        return JsonResponse({"err": "cat already has 3 jobs"}, status=400)
     # save mission to able to link targets
     mission.save()
 
@@ -205,3 +207,35 @@ def create_mission(request: HttpRequest) -> JsonResponse:
             complete=False,
         )
     return JsonResponse({"id": mission.id})
+
+
+@require_http_methods(["PATCH"])
+@csrf_exempt
+def target(request: HttpRequest, target_id: int) -> JsonResponse:
+    data = get_json(request)
+    if not (set(data) <= {"complete", "notes"}):
+        return JsonResponse(
+            {"err": "only 'complete' and 'notes' can be changed"}, status=400
+        )
+    t = get_object_or_404(Target, pk=target_id)
+    match data.get("notes"):
+        case None:
+            pass
+        case notes:
+            t.notes = notes
+    match data.get("complete"):
+        case None:
+            pass
+        case status:
+            t.complete = status
+    t.save()
+    return JsonResponse(
+        {
+            "ok": target_id,
+            "name": t.name,
+            "country": t.country,
+            "notes": t.notes,
+            "complete": t.complete,
+            "mission_id": t.mission_id,
+        }
+    )

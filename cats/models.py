@@ -1,9 +1,6 @@
 # Create your models here.
 from django.db import IntegrityError, models
 
-MAX_MISSIONS = 3
-
-
 class Cat(models.Model):
     # ok, I think we need at least some length limit for a name
     # 200 should be pretty generous
@@ -31,14 +28,6 @@ class Mission(models.Model):
     def __str__(self):
         return self.id
 
-    def save(self, *args, **kwargs):
-        if (
-            self.cat is not None
-            and self.cat.mission_set.count() >= MAX_MISSIONS
-        ):
-            raise IntegrityError("cats can't have more than 3 missions")
-        super().save(*args, **kwargs)
-
     def delete(self, *args, **kwargs):
         if self.cat is not None:
             raise IntegrityError("can't delete a mission with assigned cat")
@@ -60,6 +49,35 @@ class Target(models.Model):
 
     def save(self, *args, **kwargs):
         old_t = Target.objects.get(pk=self.id)
-        if self.notes != old_t.notes and (self.complete or self.mission.complete):
+        if self.notes != old_t.notes and (
+            self.complete or self.mission.complete
+        ):
             raise IntegrityError("can't update notes after completion")
+
+        # go through all targets on linked mission
+        # to discover if the mission should be completed
+        for t in self.mission.target_set.all():
+            # target is us, check if just completed
+            # if completed, skip to the next target
+            # if not, give up
+            if t.id == self.id:
+                if not self.complete:
+                    break
+                else:
+                    continue
+            # if not completed, give up
+            if not t.complete:
+                break
+        else:
+            # if couldn't find uncompleted target to break on, we're done!!
+            #
+            # yep, Python can use `else` on `for` loops
+            #
+            # I have no idea how many people find that readable, and whether
+            # I should put this into test assesment, but here it is
+            #
+            # I'm not sure if I'd like to see such code, but I couldn't resist
+            # the temptation, so it's up to code reviewer to decide ^^'
+            self.mission.complete = True
+            self.mission.save()
         super().save(*args, **kwargs)

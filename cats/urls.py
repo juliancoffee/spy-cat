@@ -13,4 +13,6 @@ urlpatterns = [
     path("mission/", views.list_missions, name="list_missions"),
     path("mission/<int:mission_id>", views.mission, name="mission"),
     path("mission/create/", views.create_mission, name="create_mission"),
+    # targets
+    path("target/<int:target_id>/", views.target, name="target"),
 ]
