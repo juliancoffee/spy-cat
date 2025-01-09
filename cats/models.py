@@ -1,5 +1,7 @@
 # Create your models here.
-from django.db import models, IntegrityError
+from django.db import IntegrityError, models
+
+MAX_MISSIONS = 3
 
 
 class Cat(models.Model):
@@ -26,15 +28,21 @@ class Mission(models.Model):
     cat = models.ForeignKey(Cat, on_delete=models.PROTECT, null=True)
     complete = models.BooleanField()
 
+    def __str__(self):
+        return self.id
+
+    def save(self, *args, **kwargs):
+        if (
+            self.cat is not None
+            and self.cat.mission_set.count() >= MAX_MISSIONS
+        ):
+            raise IntegrityError("cats can't have more than 3 missions")
+        super().save(*args, **kwargs)
+
     def delete(self, *args, **kwargs):
         if self.cat is not None:
             raise IntegrityError("can't delete a mission with assigned cat")
         super().delete(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        if self.cat is not None and self.cat.mission_set.count() >= 3:
-            raise IntegrityError("cats can't have more than 3 missions")
-        super().save(*args, **kwargs)
 
 
 class Target(models.Model):
@@ -46,6 +54,9 @@ class Target(models.Model):
     complete = models.BooleanField()
 
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
     def save(self, *args, **kwargs):
         # TODO: check for note update while completed

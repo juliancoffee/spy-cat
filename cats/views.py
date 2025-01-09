@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import Cat, Mission, Target
+from .models import Cat, Mission
 
 
 def get_json(request: HttpRequest) -> dict:
@@ -133,6 +133,7 @@ def list_missions(request: HttpRequest) -> JsonResponse:
         }
     )
 
+
 @require_http_methods(["GET", "DELETE", "PATCH"])
 def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
     if request.method == "GET":
@@ -157,6 +158,7 @@ def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
         Mission.objects.get(pk=mission_id).delete()
         return JsonResponse({"ok": mission_id})
 
+
 @require_POST
 @csrf_exempt
 def create_mission(request: HttpRequest) -> JsonResponse:
@@ -180,4 +182,3 @@ def create_mission(request: HttpRequest) -> JsonResponse:
             complete=False,
         )
     return JsonResponse({"id": mission.id})
-
