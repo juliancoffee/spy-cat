@@ -17,6 +17,7 @@ class Cat(models.Model):
     def __str__(self):
         return self.name
 
+
 class Mission(models.Model):
     # cat may be optional, but I don't think we can delete a cat while
     # they're still assigned to the mission
@@ -32,15 +33,17 @@ class Mission(models.Model):
 
     def save(self, *args, **kwargs):
         # TODO: check that cat doesn't have more than 3 missions
-        super().delete(*args, **kwargs)
+        super().save(*args, **kwargs)
+
 
 class Target(models.Model):
+    # NOTE: the same as with cats, name is not require to be unique here.
+    # we differentiate them by id
     name = models.CharField(max_length=200)
     country = models.CharField(max_length=200)
     notes = models.TextField()
     complete = models.BooleanField()
 
-    # targets are unique to missions
     mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):

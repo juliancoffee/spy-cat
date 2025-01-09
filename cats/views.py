@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import Cat
+from .models import Cat, Mission, Target
 
 
 def get_json(request: HttpRequest) -> dict:
@@ -17,7 +17,7 @@ def get_json(request: HttpRequest) -> dict:
 
 
 # Create your views here.
-def list(request: HttpRequest) -> JsonResponse:
+def list_cats(request: HttpRequest) -> JsonResponse:
     cats = Cat.objects.all()
     return JsonResponse(
         {
@@ -63,6 +63,8 @@ def cat(request: HttpRequest, cat_id: int) -> JsonResponse:
         c.salary = new_salary
         c.save()
         return JsonResponse({"ok": cat_id, "new_salary": new_salary})
+    else:
+        raise RuntimeError("shouldn't be reachable")
 
 
 def is_valid_breed(breed: str) -> bool:
@@ -99,3 +101,53 @@ def create_cat(request: HttpRequest) -> JsonResponse:
     cat.save()
 
     return JsonResponse({"id": cat.id})
+
+
+def list_missions(request: HttpRequest) -> JsonResponse:
+    missions = Mission.objects.all()
+    return JsonResponse(
+        {
+            "missions": [
+                {
+                    "id": m.id,
+                    "cat_id": m.cat.id if m.cat else None,
+                    "targets": [
+                        {
+                            "target_id": t.id,
+                            "name": t.name,
+                            "country": t.country,
+                            "notes": t.notes,
+                            "complete": t.complete,
+                        }
+                        for t in m.target_set.all()
+                    ],
+                }
+                for m in missions
+            ]
+        }
+    )
+
+
+@require_POST
+@csrf_exempt
+def create_mission(request: HttpRequest) -> JsonResponse:
+    data = get_json(request)
+    maybe_cat = None
+    match data.get("cat_id"):
+        case None:
+            pass
+        case cat_id:
+            maybe_cat = get_object_or_404(Cat, pk=int(cat_id))
+
+    mission = Mission(cat=maybe_cat, complete=False)
+    # save mission to able to link targets
+    mission.save()
+
+    for target in data["targets"]:
+        mission.target_set.create(
+            name=target["name"],
+            country=target["country"],
+            notes="",
+            complete=False,
+        )
+    return JsonResponse({"id": mission.id})
