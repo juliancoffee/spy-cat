@@ -1,5 +1,5 @@
 # Create your models here.
-from django.db import models
+from django.db import models, IntegrityError
 
 
 class Cat(models.Model):
@@ -16,3 +16,33 @@ class Cat(models.Model):
 
     def __str__(self):
         return self.name
+
+class Mission(models.Model):
+    # cat may be optional, but I don't think we can delete a cat while
+    # they're still assigned to the mission
+    #
+    # that would be wrong ...
+    cat = models.ForeignKey(Cat, on_delete=models.PROTECT, null=True)
+    complete = models.BooleanField()
+
+    def delete(self, *args, **kwargs):
+        if self.cat is not None:
+            raise IntegrityError("can't delete a mission with assigned cat")
+        super().delete(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        # TODO: check that cat doesn't have more than 3 missions
+        super().delete(*args, **kwargs)
+
+class Target(models.Model):
+    name = models.CharField(max_length=200)
+    country = models.CharField(max_length=200)
+    notes = models.TextField()
+    complete = models.BooleanField()
+
+    # targets are unique to missions
+    mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        # TODO: check for note update while completed
+        super().save(*args, **kwargs)
