@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .models import Cat
 
 
-def get_json(request) -> dict:
+def get_json(request: HttpRequest) -> dict:
     # ok, now I understand the value of DRF, lol
     data = json.loads(request.body)
 
@@ -35,7 +35,7 @@ def list(request: HttpRequest) -> JsonResponse:
     )
 
 
-@require_http_methods(["GET", "DELETE"])
+@require_http_methods(["GET", "DELETE", "PATCH"])
 @csrf_exempt
 def cat(request: HttpRequest, cat_id: int) -> JsonResponse:
     if request.method == "GET":
@@ -51,6 +51,18 @@ def cat(request: HttpRequest, cat_id: int) -> JsonResponse:
     elif request.method == "DELETE":
         Cat.objects.get(pk=cat_id).delete()
         return JsonResponse({"ok": cat_id})
+    elif request.method == "PATCH":
+        data = get_json(request)
+        if set(data) != {"salary"}:
+            return JsonResponse(
+                {"err": "only salary can be changed"}, status=400
+            )
+        c = Cat.objects.get(pk=cat_id)
+
+        new_salary = int(data["salary"])
+        c.salary = new_salary
+        c.save()
+        return JsonResponse({"ok": cat_id, "new_salary": new_salary})
 
 
 def is_valid_breed(breed: str) -> bool:
