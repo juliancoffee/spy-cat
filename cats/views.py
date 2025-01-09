@@ -157,6 +157,29 @@ def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
     elif request.method == "DELETE":
         Mission.objects.get(pk=mission_id).delete()
         return JsonResponse({"ok": mission_id})
+    elif request.method == "PATCH":
+        m = Mission.objects.get(pk=mission_id)
+        data = get_json(request)
+        if set(data) != {"cat_id"}:
+            return JsonResponse(
+                {"err": "only cat can be changed"}, status=400
+            )
+
+        # NOTE: allows to un-assign cats
+        # that's a feature, not a bug
+        maybe_cat = None
+        match data.get("cat_id"):
+            case None:
+                pass
+            case cat_id:
+                cat_id = int(data["cat_id"])
+                maybe_cat = get_object_or_404(Cat, pk=cat_id)
+        m.cat = maybe_cat
+        m.save()
+
+        return JsonResponse({"ok": mission_id, "new_cat": maybe_cat})
+    else:
+        raise RuntimeError("shouldn't be reachable")
 
 
 @require_POST

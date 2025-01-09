@@ -59,5 +59,7 @@ class Target(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
-        # TODO: check for note update while completed
+        old_t = Target.objects.get(pk=self.id)
+        if self.notes != old_t.notes and (self.complete or self.mission.complete):
+            raise IntegrityError("can't update notes after completion")
         super().save(*args, **kwargs)
