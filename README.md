@@ -11,7 +11,20 @@ requirements.txt can be generated with the following command, and maybe I even
 won't forget to include them in the repository.
 ``` bash
 $ uv pip compile pyproject.toml > requirements.txt
-```
 
-Although preferably, you'd use `docker compose` to run it to bootstrap all the
-dev infrastructure like databases.
+```
+Oh, and don't forget required environment variables.
+- DB_PASSWORD=dev
+- DB_HOST=localhost
+- SECRET_KEY=whatever
+
+Anyway, you'd need to set up database first, use docker-compose for that.
+```
+$ ./dev-docker.sh
+```
+After that run the server as a regular Django app.
+```bash
+# assuming you've activated the environment and installed the dependencies
+$ python manage.py migrate
+$ python manage.py runserver
+```
