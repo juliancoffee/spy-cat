@@ -188,8 +188,14 @@ def create_mission(request: HttpRequest) -> JsonResponse:
         maybe_cat = get_object_or_404(Cat, pk=cat_id)
 
     mission = Mission(cat=maybe_cat, complete=False)
-    if maybe_cat is not None and maybe_cat.mission_set.count() >= 3:
-        return JsonResponse({"err": "cat already has 3 jobs"}, status=400)
+    MAX_CAT_MISSIONS = 3
+    if (
+        maybe_cat is not None
+        and maybe_cat.mission_set.count() >= MAX_CAT_MISSIONS
+    ):
+        return JsonResponse(
+            {"err": f"cat already has {MAX_CAT_MISSIONS} jobs"}, status=400
+        )
     # save mission to able to link targets
     mission.save()
 

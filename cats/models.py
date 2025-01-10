@@ -1,6 +1,7 @@
 # Create your models here.
 from django.db import IntegrityError, models
 
+
 class Cat(models.Model):
     # ok, I think we need at least some length limit for a name
     # 200 should be pretty generous
