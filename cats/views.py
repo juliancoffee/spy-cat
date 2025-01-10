@@ -8,6 +8,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .models import Cat, Mission, Target
 
+MAX_CAT_MISSIONS = 3
+
 
 def get_json(request: HttpRequest) -> dict:
     # ok, now I understand the value of DRF, lol
@@ -171,6 +173,12 @@ def mission(request: HttpRequest, mission_id: int) -> JsonResponse:
         if (cat_id := data.get("cat_id")) is not None:
             # cat_id should already be int
             maybe_cat = get_object_or_404(Cat, pk=cat_id)
+            # NOTE: surely there must be some way to do it with ORM
+            if maybe_cat.mission_set.count() >= MAX_CAT_MISSIONS:
+                return JsonResponse(
+                    {"err": f"cat already has {MAX_CAT_MISSIONS} jobs"},
+                    status=400,
+                )
         m.cat = maybe_cat
         m.save()
 
@@ -188,7 +196,6 @@ def create_mission(request: HttpRequest) -> JsonResponse:
         maybe_cat = get_object_or_404(Cat, pk=cat_id)
 
     mission = Mission(cat=maybe_cat, complete=False)
-    MAX_CAT_MISSIONS = 3
     if (
         maybe_cat is not None
         and maybe_cat.mission_set.count() >= MAX_CAT_MISSIONS
