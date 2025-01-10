@@ -29,6 +29,13 @@ class Mission(models.Model):
     def __str__(self):
         return self.id
 
+    def save(self, *args, **kwargs):
+        # TODO:
+        # I wish I knew how to open a transaction here, try to
+        # save a new mission, check if cats don't have more than three missions
+        # here and if they have, do a rollback
+        super().save(*args, **kwargs)
+
     def delete(self, *args, **kwargs):
         if self.cat is not None:
             raise IntegrityError("can't delete a mission with assigned cat")
